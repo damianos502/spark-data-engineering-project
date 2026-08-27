@@ -1,0 +1,13 @@
+{
+    "events": ["event_id"],
+
+    "order_items": ["order_item_id"],
+
+    "orders": ["order_id"],
+
+    "products": ["product_id"],
+
+    "reviews": ["review_id"],
+
+    "users": ["user_id"]
+}

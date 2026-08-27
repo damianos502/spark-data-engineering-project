@@ -1,0 +1,7 @@
+{
+    "event_type": ["wishlist", "purchase", "view", "cart"],
+    "order_status": ["completed", "shipped", "cancelled", "returned", "processing"],
+    "category": ["home & kitchen", "sports", "pet supplies", "groceries", "electronics", "clothing", "automotive", "books", "beauty", "toys"],
+    "gender": ["female", "other", "male"]
+}
+

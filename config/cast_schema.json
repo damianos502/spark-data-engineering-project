@@ -1,0 +1,25 @@
+{
+    "events": {
+        "event_timestamp": "timestamp"
+    },
+    "order_items": {
+        "quantity": "int",
+        "item_price": "double",
+        "item_total": "double"
+    },
+    "orders": {
+        "order_date": "timestamp",
+        "total_amount": "double"
+    },
+    "products": {
+        "price": "double",
+        "rating": "double"
+    },
+    "reviews": {
+        "rating": "int",
+        "review_date": "timestamp"
+    },
+    "users": {
+        "signup_date": "date"
+    }
+}

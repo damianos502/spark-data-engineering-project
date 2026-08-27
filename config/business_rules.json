@@ -1,0 +1,43 @@
+{
+    "events": {
+        "user_id": "df_users",
+        "product_id": "df_products",
+        "event_type": "in_enum",
+        "event_timestamp": "is_past"
+    },
+
+    "order_items": {
+        "order_id": "df_orders",
+        "product_id": "df_products",
+        "user_id": "df_users",
+        "quantity": "is_positive",
+        "item_price": "is_positive",
+        "item_total": "is_positive"
+    },
+
+    "orders": {
+        "user_id": "df_users",
+        "order_date": "is_past",
+        "order_status": "in_enum",
+        "total_amount": "is_positive"
+    },
+
+    "products": {
+        "category": "in_enum",
+        "price": "is_positive",
+        "rating": "is_positive"
+    },
+
+    "reviews": {
+        "order_id": "df_orders",
+        "product_id": "df_products",
+        "user_id": "df_users",
+        "rating": "is_positive",
+        "review_date": "is_past"
+    },
+
+    "users": {
+        "gender": "in_enum",
+        "signup_date": "is_past"
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "reviews": [["user_id", "string"],
+                ["product_id", "string"],
+                ["order_id", "string"],
+                ["review_id", "string"],
+                ["rating", "int"],
+                ["review_text", "string"],
+                ["review_date", "timestamp"]
+                ],
+                
+    "events": [["event_type", "string"],
+                ["product_id", "string"],
+                ["user_id", "string"],
+                ["event_id", "string"],
+                ["event_timestamp", "timestamp"]
+                ],
+
+    "order_items": [["user_id", "string"],
+                ["product_id", "string"],
+                ["order_id", "string"],
+                ["order_item_id", "string"],
+                ["quantity", "int"],
+                ["item_price", "double"],
+                ["item_total", "double"]
+                ],
+    
+    "users": [["gender", "string"],
+                ["user_id", "string"],
+                ["name", "string"],
+                ["city", "string"],
+                ["signup_date", "date"]
+                ],
+
+    "products": [["category", "string"],
+                ["product_id", "string"],
+                ["product_name", "string"],
+                ["brand", "string"],
+                ["price", "double"],
+                ["rating", "double"]
+                ],
+
+    "orders": [["order_status", "string"],
+                ["user_id", "string"],
+                ["order_id", "string"],
+                ["order_date", "timestamp"],
+                ["total_amount", "double"]
+                ]
+}

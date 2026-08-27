@@ -1,0 +1,75 @@
+# =============================
+# Python cache / compiled files
+# =============================
+__pycache__/
+*.py[cod]
+
+# =============================
+# Virtual environments
+# =============================
+.venv/
+venv/
+env/
+
+# =============================
+# IDE / editor files
+# =============================
+.vscode/
+.idea/
+
+# =============================
+# Jupyter
+# =============================
+.ipynb_checkpoints/
+
+# =============================
+# Logs
+# =============================
+logs/*
+!logs/.gitkeep
+*.log
+
+# =============================
+# Data
+# =============================
+data/raw/*
+!data/raw/.gitkeep
+
+data/bronze/*
+!data/bronze/.gitkeep
+
+data/silver/*
+!data/silver/.gitkeep
+
+data/gold/*
+!data/gold/.gitkeep
+
+# =============================
+# Spark generated files
+# =============================
+*.parquet
+*.crc
+_SUCCESS
+
+# =============================
+spark-warehouse/
+metastore_db/
+derby.log
+
+# =============================
+# Testing
+# =============================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# =============================
+# Environment variables
+# =============================
+.env
+
+# =============================
+# OS junk
+# =============================
+.DS_Store
+Thumbs.db

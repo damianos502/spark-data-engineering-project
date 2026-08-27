@@ -1,0 +1,16 @@
+{
+    "config_business_rules": "business_rules.json",
+    "config_cast_schema": "cast_schema.json",
+    "config_duplicate_handling": "duplicate_handling.json",
+    "config_enums": "enums.json",
+    "config_gold_expected_schema": "gold_expected_schema.json",
+    "config_null_handling": "null_handling.json",
+    "config_tables_names": "tables_names.json",
+    "config_raw_expected_columns": "raw_expected_columns.json",
+    "raw_events": "events.csv",
+    "raw_order_items": "order_items.csv",
+    "raw_orders": "orders.csv",
+    "raw_products": "products.csv",
+    "raw_reviews": "reviews.csv",
+    "raw_users": "users.csv"
+}

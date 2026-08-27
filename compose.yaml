@@ -1,0 +1,20 @@
+services:
+
+  spark-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HOST_UID: ${HOST_UID}
+        HOST_GID: ${HOST_GID}
+
+    image: de-spark-lab:4.2.0
+
+    ports:
+      - "127.0.0.1:8888:8888"
+      - "127.0.0.1:4040:4040"
+
+    volumes:
+      - .:/workspace
+
+    working_dir: /workspace

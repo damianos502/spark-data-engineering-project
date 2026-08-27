@@ -1,0 +1,13 @@
+{
+    "reviews": ["review_id", "order_id", "product_id", "user_id", "rating", "review_text", "review_date"],
+                
+    "events": ["event_id", "user_id", "product_id", "event_type", "event_timestamp"],
+
+    "order_items": ["order_item_id", "order_id", "product_id", "user_id", "quantity", "item_price", "item_total"],
+    
+    "users": ["user_id", "name", "email", "gender", "city", "signup_date"],
+
+    "products": ["product_id", "product_name", "category", "brand", "price", "rating"],
+
+    "orders": ["order_id", "user_id", "order_date", "order_status", "total_amount"]
+}

@@ -1,0 +1,54 @@
+{
+    "events": {
+        "event_id": "drop",
+        "user_id": "drop",
+        "product_id": "drop",
+        "event_type": "drop",
+        "event_timestamp": "drop"
+    },
+
+    "order_items": {
+        "order_item_id": "drop",
+        "order_id": "drop",
+        "product_id": "drop",
+        "user_id": "drop",
+        "quantity": "drop",
+        "item_price": "drop",
+        "item_total": "drop"
+    },
+
+    "orders": {
+        "order_id": "drop",
+        "user_id": "flagging",
+        "order_date": "flagging",
+        "total_amount": "flagging",
+        "order_status": "fill_unknown"
+    },
+
+    "products": {
+        "product_id": "drop",
+        "product_name": "fill_unknown",
+        "price": "flagging",
+        "category": "fill_unknown",
+        "brand": "fill_empty",
+        "rating": "flagging"
+    },
+
+    "reviews": {
+        "review_id": "drop",
+        "order_id": "drop",
+        "product_id": "drop",
+        "user_id": "drop",
+        "rating": "drop",
+        "review_text": "fill_empty"
+    },
+
+    "users": {
+        "user_id": "drop",
+        "email": "fill_unknown",
+        "gender": "fill_unknown",
+        "name": "fill_empty",
+        "city": "fill_empty"
+    }
+
+}
