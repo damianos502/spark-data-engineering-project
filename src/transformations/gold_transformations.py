@@ -105,12 +105,9 @@ def customer_metrics(orders_dataframe: DataFrame) -> tuple[DataFrame, int, float
                             .agg(SF.count_distinct("user_id").alias("active_users_count"))
                             ).collect()[0][0]
 
-    print(f"active users count: {active_users_count}")    
-        
     avg_orders_count_per_user = (gold_customer_metrics
                                     .agg(SF.round(SF.avg("orders_count"), 2).alias("avg_orders_count"))
                                     ).collect()[0][0]
-    print(f"avg orders: {avg_orders_count_per_user}")
         
     return gold_customer_metrics, active_users_count, avg_orders_count_per_user
 

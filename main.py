@@ -25,12 +25,11 @@ def main() -> None:
     spark = None
 
     try:
-    
         start_time = time.time()
         spark = create_spark_session(app_name = "Ecommerce Medallion Pipeline")
 
         bronze = BronzeLayer(
-        spark = spark
+            spark = spark
         )
     
         logger.info("Start Pipeline Bronze.")
