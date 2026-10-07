@@ -99,7 +99,7 @@ def test_valid_columns_in_dataframe_presence(null_search_result, sample_datafram
                                                             dataframe_name = dataframe_name, 
                                                             columns_names = columns_names)
         if not single_table_result:
-            final_result == False
+            final_result = False
 
     assert final_result == True
 

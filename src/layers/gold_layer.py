@@ -65,16 +65,22 @@ class GoldLayer(BasicLayer):
                                  logger = self.logger,
                                  layer_name = "gold",
                                  transformation_name = "sales_and_revenues")
+ 
+        sum_per_user = gold_transformations.aggregate_revenue_per_user(orders_dataframe = orders_dataframe)
+        sum_per_user.persist()
 
+        try: 
+            gold_geography, share_top_users_in_total_revenue = gold_transformations.geography(sum_per_user_dataframe = sum_per_user, 
+                                                                                            users_dataframe = users_dataframe, 
+                                                                                            total_system_revenue = total_system_revenue,
+                                                                                            logger = self.logger)
+            io_writers.write_parquet(data = gold_geography,
+                                    logger = self.logger,
+                                    layer_name = "gold",
+                                    transformation_name = "geography")
 
-        gold_geography, share_top_users_in_total_revenue = gold_transformations.geography(orders_dataframe = orders_dataframe, 
-                                                                                          users_dataframe = users_dataframe, 
-                                                                                          total_system_revenue = total_system_revenue,
-                                                                                          logger = self.logger)
-        io_writers.write_parquet(data = gold_geography,
-                                 logger = self.logger,
-                                 layer_name = "gold",
-                                 transformation_name = "geography")
+        finally:
+            sum_per_user.unpersist()
 
 
         gold_customer_metrics, active_users_count, avg_orders_count_per_user = gold_transformations.customer_metrics(orders_dataframe = orders_dataframe)

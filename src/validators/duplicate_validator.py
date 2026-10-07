@@ -16,7 +16,7 @@ def duplicates_handling(logger: Logger,
     :param deuplicate_schema_path: Deduplicate schema path
     :return: Dictionary with deduplicated DataFrames, Dictionary with DataFrames with dropped rows"""
 
-    output_dataframes = input_dataframes
+    output_dataframes = input_dataframes.copy()
     dropped_rows_dict: dict[str, DataFrame] = {}
 
     if not duplicate_schema:
@@ -45,24 +45,31 @@ def duplicates_handling(logger: Logger,
         for value_existing in not_null_value_expressions_list[1:]:
             single_row_score = single_row_score + value_existing
 
-        # Create windows partition by individual columns with dupliocates
-        ranking_window = Window.partitionBy(*columns_for_deduplicate).orderBy(
-            SF.col("row_score").desc(),
-            SF.col("ingestion_time").desc()
+        tie_break_columns = sorted(
+            column
+            for column in dataframe.columns
+            if column not in columns_for_deduplicate
+            and column not in {"batch_id", "ingestion_time"}
         )
 
-        count_window = Window.partitionBy(*columns_for_deduplicate)
+        # Create windows partition by individual columns with duplicates
+        ranking_window = Window.partitionBy(*columns_for_deduplicate).orderBy(
+            SF.col("row_score").desc(),
+            SF.col("ingestion_time").desc(),
+            *[SF.col(column).asc_nulls_last()
+              for column in tie_break_columns]
+        )
+
 
         base_dataframe = (dataframe
                             .withColumn("row_score", single_row_score)
-                            .withColumn("duplicate_count", SF.count("*").over(count_window))
                             .withColumn("row_rank", SF.row_number().over(ranking_window))
                             )
 
         # Dropped rows where row_rank > 1
         dropped_rows = (base_dataframe
                                 .filter(SF.col("row_rank") > 1)
-                                .drop("row_score", "duplicate_count", "row_rank"))
+                                .drop("row_score", "row_rank"))
         
 
         dropped_rows_dict[dataframe_name] = dropped_rows
@@ -70,7 +77,7 @@ def duplicates_handling(logger: Logger,
         # Dataframes after deduplicates
         deduplicates_dataframe = (base_dataframe
                             .filter(SF.col("row_rank") == 1)
-                            .drop("row_score", "duplicate_count", "row_rank")
+                            .drop("row_score", "row_rank")
                             )
             
         output_dataframes[dataframe_name] = deduplicates_dataframe

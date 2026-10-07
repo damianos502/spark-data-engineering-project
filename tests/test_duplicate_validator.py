@@ -3,6 +3,7 @@ import pyspark.sql.functions as SF
 from src.validators.duplicate_validator import duplicates_handling
 from pyspark.sql.types import StringType, DoubleType, StructType, StructField, Row
 from src.utils.spark_session import create_spark_session
+from pyspark.testing.utils import assertDataFrameEqual
 
 
 duplicates_schema = {
@@ -160,7 +161,6 @@ def test_ivalid_duplicate_handling_schema():
     assert not result1
     assert not result2 
 
-
 def test_dataframe_without_duplicates(sample_dataframes_without_duplicates_generator):
     logger = logging.getLogger("Test_logger")
 
@@ -176,7 +176,14 @@ def test_dataframe_without_duplicates(sample_dataframes_without_duplicates_gener
             no_duplicates = False
             break
 
-    assert sample_dataframes_without_duplicates_generator == deduplicates_dataframes
+    assert (
+        sample_dataframes_without_duplicates_generator.keys()
+        == deduplicates_dataframes.keys()
+    )
+
+    for name, expected_df in sample_dataframes_without_duplicates_generator.items():
+        assertDataFrameEqual(expected_df, deduplicates_dataframes[name])
+        
     assert no_duplicates == True
 
 def test_dataframe_with_duplicates(sample_dataframes_with_duplicates_generator):

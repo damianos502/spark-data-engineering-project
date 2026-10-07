@@ -21,3 +21,6 @@ spark-version:
 
 python-version:
 	docker compose run --rm spark-lab python3 --version
+
+run-main:
+	docker compose run --rm spark-lab python3 main.py

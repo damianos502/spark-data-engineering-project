@@ -165,56 +165,54 @@ def business_flagging(input_dataframes: dict[str, DataFrame],
 
     for dataframe_name, dataframe in input_dataframes.items():
         added_columns: list[str] = []
-        added_column_name: str = ""
-        checked_dataframe: DataFrame = dataframe
+        checked_dataframe = dataframe
 
-        if dataframe_name not in business_rules_schema:
-            logger.warning(f"No business rules for DataFrame {dataframe_name} in loaded schema.")
-            continue
+        current_dataframe_rules = business_rules_schema.get(dataframe_name)
 
-        current_dataframe_rules = business_rules_schema[dataframe_name]
-
-        for column_name in dataframe.columns:
-            if column_name not in current_dataframe_rules:
-                continue 
-            rule_value = current_dataframe_rules[column_name]
-            method_key = get_method(rule_value)
-
-            if not method_key:
-                logger.warning(f"Incorrect name of validation rule - {rule_value} for {dataframe_name}/{column_name}")
-                continue
-
-            validation_func = METHOD_MAP[method_key]
-            checked_dataframe, added_column_name = validation_func(checked_dataframe, 
-                                                                     column_name, 
-                                                                     rule_value, 
-                                                                     context)
-            if checked_dataframe is None or added_column_name is None:
-                logger.info(f"{dataframe_name}/{column_name}: Skip validation for rule - {rule_value}")
-                continue
-
-            added_columns.append(added_column_name)
-
-        # Business overall correct if no validation column has been added
-        if not added_columns:
-            sum_up_dataframe = (checked_dataframe
-                                .withColumn("business_overall_correct",
-                                            SF.lit(True)))
-
-        else:
-            # Business overall correct is True if all of added columns are True
-            columns_expr = [
-                SF.coalesce(SF.col(column), SF.lit(False))
-                for column in added_columns
-            ]
-
-            sum_up_expr = reduce(
-                lambda a, b: a & b,
-                columns_expr 
+        if not current_dataframe_rules:
+            raise ValueError(
+                f"No business rules configured for table: {dataframe_name}"
             )
 
-            sum_up_dataframe = (checked_dataframe
-                            .withColumn("business_overall_correct", sum_up_expr))
+        for column_name, rule_value in current_dataframe_rules.items():
+            if column_name not in dataframe.columns:
+                raise ValueError(
+                    f"Missing column for validation: {dataframe_name}.{column_name}"
+                )
+
+            method_key = get_method(rule_value)
+
+            if method_key is None:
+                raise ValueError(
+                    f"Unknown rule: {rule_value} for {dataframe_name}.{column_name}"
+                )
+            candidate_dataframe, added_column_name = METHOD_MAP[method_key](checked_dataframe,
+                                                                            column_name,
+                                                                            rule_value,
+                                                                            context,
+            )
+            
+            if candidate_dataframe is None or added_column_name is None:
+                raise ValueError(
+                    f"Cannot execute rule: {rule_value} "
+                    f"for {dataframe_name}.{column_name}"
+                )
+
+            checked_dataframe = candidate_dataframe
+            added_columns.append(added_column_name)
+
+        sum_up_expr = reduce(
+            lambda a, b: a & b,
+            [
+                SF.coalesce(SF.col(column), SF.lit(False))
+                for column in added_columns
+            ],
+        )
+
+        sum_up_dataframe = checked_dataframe.withColumn(
+            "business_overall_correct",
+            sum_up_expr,
+        )
 
         final_output_dataframes_dict[dataframe_name] = sum_up_dataframe
 

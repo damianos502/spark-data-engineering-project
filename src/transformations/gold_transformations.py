@@ -33,7 +33,18 @@ def sales_and_revenues(orders_dataframe: DataFrame
    
     return gold_sales_and_revenues, total_system_revenue
 
-def geography(orders_dataframe: DataFrame, 
+def aggregate_revenue_per_user(orders_dataframe: DataFrame) -> DataFrame:
+    """ Aggregation which calculate revenue per user
+    :param orders_dataframe: Orders DataFrame"""
+
+    sum_per_user_dataframe = (orders_dataframe
+                    .groupBy("user_id")
+                    .agg(SF.round(SF.sum("total_amount"), 2).alias("revenue_per_user"))
+                    )
+
+    return sum_per_user_dataframe
+
+def geography(sum_per_user_dataframe: DataFrame, 
               users_dataframe: DataFrame, 
               total_system_revenue: float,
               logger: Logger
@@ -48,13 +59,7 @@ def geography(orders_dataframe: DataFrame,
     window_user_count_ranking = Window.orderBy(SF.col("users_count").desc())
     window_rev_per_user_ranking = Window.orderBy(SF.col("revenue_per_user").desc())
 
-
-    """ Indirect DataFrame """
-    sum_per_user_dataframe = (orders_dataframe
-                .groupBy("user_id")
-                .agg(SF.round(SF.sum("total_amount"), 2).alias("revenue_per_user"))
-                )
-        
+    
     """ Top 10% of users """
     all_users_count = sum_per_user_dataframe.count()
 

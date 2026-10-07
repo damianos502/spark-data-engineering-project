@@ -1,7 +1,7 @@
 import logging, pytest, datetime
 import pyspark.sql.functions as SF
 from pyspark.testing import assertDataFrameEqual
-from src.transformations.gold_transformations import sales_and_revenues, geography, customer_metrics, products, orders, customers_loyalty
+from src.transformations.gold_transformations import sales_and_revenues, geography, customer_metrics, products, orders, customers_loyalty, aggregate_revenue_per_user
 import src.utils.logger as L
 from pyspark.sql.types import DayTimeIntervalType, StringType, DoubleType, StructType, StructField, IntegerType, TimestampType, FloatType, DateType, LongType, BooleanType
 from src.utils.spark_session import create_spark_session
@@ -117,10 +117,10 @@ def test_geography_pass(sample_orders_dataframe_loader, sample_users_dataframe_l
                                 StructField("users_count_ranking", IntegerType(), True)
                             ])
 
-    sample_orders = sample_orders_dataframe_loader
+    sample_users_rev = aggregate_revenue_per_user(sample_orders_dataframe_loader)
     sample_users = sample_users_dataframe_loader
 
-    final_dataframe, test_share_in_total = geography(orders_dataframe = sample_orders, 
+    final_dataframe, test_share_in_total = geography(sum_per_user_dataframe = sample_users_rev, 
                                                      users_dataframe = sample_users, 
                                                      total_system_revenue = SAMPLE_TOTAL_SYSTEM_REVENUE, 
                                                      logger = logger)
