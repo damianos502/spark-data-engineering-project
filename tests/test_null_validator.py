@@ -1,13 +1,15 @@
-import logging, pytest, datetime
+import datetime
+import logging
+
+import pytest
 from pyspark.sql.types import StringType, DoubleType, StructType, StructField, Row
 import pyspark.sql.functions as SF
 from src.validators.null_validator import null_search, columns_in_dataframe_presence, custom_drop_nulls, custom_fill_unknown, custom_fill_empty, custom_null_flagging, null_handling
-from src.utils.spark_session import create_spark_session
-from src.utils.paths import CONFIG_DIR
+from pyspark.testing import assertDataFrameEqual
 
 @pytest.fixture
-def sample_dataframes_dict_generator():
-    spark = create_spark_session("test_null_validator")
+def sample_dataframes_dict_generator(spark_session):
+    spark = spark_session
     dataframes_dict = {}
     sample_data = {
         "events": [("E00000001", "U009798", "P001393", "cart", "2025-07-08T14:28:55.893919"),
@@ -73,6 +75,7 @@ def null_search_result(sample_dataframes_dict_generator):
     
     return result
 
+
 def test_null_search(null_search_result):
 
     expected_nulls_dict = {
@@ -90,40 +93,22 @@ def test_null_search(null_search_result):
     assert null_search_result == expected_nulls_dict
     assert null_search_result != unexpected_nulls_dict
 
-def test_valid_columns_in_dataframe_presence(null_search_result, sample_dataframes_dict_generator):
-    logger = logging.getLogger("test_logger")
-    final_result = True
-    for dataframe_name, columns_names in null_search_result.items():
-        single_table_result = columns_in_dataframe_presence(logger = logger, 
-                                                            dataframe = sample_dataframes_dict_generator[dataframe_name], 
-                                                            dataframe_name = dataframe_name, 
-                                                            columns_names = columns_names)
-        if not single_table_result:
-            final_result = False
 
-    assert final_result == True
+def test_valid_columns_in_dataframe_presence(null_search_result, sample_dataframes_dict_generator):
+    for name, columns in null_search_result.items():
+        assert columns_in_dataframe_presence(
+            logging.getLogger("test"), sample_dataframes_dict_generator[name], name, columns
+        ) is True
+
+
 
 def test_invalid_columns_in_dataframe_presence(sample_dataframes_dict_generator):
-    logger = logging.getLogger("test_logger")
-    final_result = False
+    for name, dataframe in sample_dataframes_dict_generator.items():
+        assert columns_in_dataframe_presence(
+            logging.getLogger("test"), dataframe, name, ["missing_column"]
+        ) is False
 
-    incorrect_nulls_dict = {
-        "events": ['event_id', 'event_type', 'event_timestamp', 'test'],
-        "orders": ['user_id', 'order_date', 'total_amount', 'test'],
-        "users": ['user_id', 'email', 'gender', 'signup_date', "test"]
-        }
 
-    for dataframe_name, columns_names in incorrect_nulls_dict.items():
-        single_table_result = columns_in_dataframe_presence(logger = logger, 
-                                                            dataframe = sample_dataframes_dict_generator[dataframe_name], 
-                                                            dataframe_name = dataframe_name, 
-                                                            columns_names = columns_names)
-
-        if single_table_result == True:
-            final_result = True
-            break
-
-    assert final_result == False
 
 def test_drop_nulls(sample_dataframes_dict_generator):
     logger = logging.getLogger("test_logger")
@@ -142,9 +127,10 @@ def test_drop_nulls(sample_dataframes_dict_generator):
 
     expected_rows = [Row(event_id = 'E00000001', user_id = 'U009798', product_id = 'P001393', event_type = 'cart', event_timestamp = datetime.datetime(2025, 7, 8, 14, 28, 55, 893919)), 
                      Row(event_id = 'E00000004', user_id = 'U002664', product_id = 'P000400', event_type = None, event_timestamp = datetime.datetime(2025, 7, 19, 22, 47, 7, 19634))]
-    final_rows = dataframe_after_drop.collect()[0:2]
+    final_rows = dataframe_after_drop.collect()
 
-    assert final_rows == expected_rows
+    assertDataFrameEqual(final_rows, expected_rows, checkRowOrder=False, rtol=0, atol=0)
+
 
 def test_fill_unknown(sample_dataframes_dict_generator):
     logger = logging.getLogger("test_logger")
@@ -165,9 +151,10 @@ def test_fill_unknown(sample_dataframes_dict_generator):
                      Row(event_id = 'unknown', user_id = 'U006348', product_id = 'P001404', event_type = 'view', event_timestamp = None), 
                      Row(event_id = 'E00000004', user_id = 'U002664', product_id = 'P000400', event_type = None, event_timestamp = datetime.datetime(2025, 7, 19, 22, 47, 7, 19634)), 
                      Row(event_id = 'E00000005', user_id = 'unknown', product_id = 'P000392', event_type = 'view', event_timestamp = datetime.datetime(2024, 10, 24, 10, 20, 33, 602165))]
-    final_rows = dataframe_after_fill.collect()[0:5]
+    final_rows = dataframe_after_fill.collect()
 
-    assert final_rows == expected_rows
+    assertDataFrameEqual(final_rows, expected_rows, checkRowOrder=False, rtol=0, atol=0)
+
 
 def test_fill_empty(sample_dataframes_dict_generator):
     logger = logging.getLogger("test_logger")
@@ -189,9 +176,10 @@ def test_fill_empty(sample_dataframes_dict_generator):
                      Row(event_id='E00000004', user_id='U002664', product_id='P000400', event_type=None, event_timestamp=datetime.datetime(2025, 7, 19, 22, 47, 7, 19634)), 
                      Row(event_id='E00000005', user_id='', product_id='P000392', event_type='view', event_timestamp=datetime.datetime(2024, 10, 24, 10, 20, 33, 602165))]
     
-    final_rows = dataframe_after_fill.collect()[0:5]
+    final_rows = dataframe_after_fill.collect()
 
-    assert final_rows == expected_rows
+    assertDataFrameEqual(final_rows, expected_rows, checkRowOrder=False, rtol=0, atol=0)
+
 
 def test_null_flagging(sample_dataframes_dict_generator):
     logger = logging.getLogger("test_logger")
@@ -213,9 +201,10 @@ def test_null_flagging(sample_dataframes_dict_generator):
                      Row(event_id='E00000004', user_id='U002664', product_id='P000400', event_type=None, event_timestamp=datetime.datetime(2025, 7, 19, 22, 47, 7, 19634), missing_values=None), 
                      Row(event_id='E00000005', user_id=None, product_id='P000392', event_type='view', event_timestamp=datetime.datetime(2024, 10, 24, 10, 20, 33, 602165), missing_values='user_id')]
     
-    final_rows = dataframe_after_flagging.collect()[0:5]
+    final_rows = dataframe_after_flagging.collect()
 
-    assert final_rows == expected_rows
+    assertDataFrameEqual(final_rows, expected_rows, checkRowOrder=False, rtol=0, atol=0)
+
 
 def test_null_handling(sample_dataframes_dict_generator, null_search_result):
     logger = logging.getLogger("test_logger")
@@ -254,7 +243,7 @@ def test_null_handling(sample_dataframes_dict_generator, null_search_result):
                                     )
 
     for table_name, dataframe in handling_result.items():
-        final_rows_dicts[table_name] = dataframe.collect()[0:6]
+        final_rows_dicts[table_name] = dataframe.collect()
 
     expected_rows = {'events': [Row(event_id='E00000001', user_id='U009798', product_id='P001393', event_type='cart', event_timestamp=datetime.datetime(2025, 7, 8, 14, 28, 55, 893919))], 
                      'orders': [Row(order_id='00000001', user_id=None, order_date=datetime.datetime(2025, 9, 9, 14, 52, 37, 292731), order_status='processing', total_amount=689.66, missing_values='user_id'), 
@@ -267,4 +256,6 @@ def test_null_handling(sample_dataframes_dict_generator, null_search_result):
                                 Row(user_id='U000004', name='Melanie Munoz', email='blairamanda@example.com', gender='Other', city='New Kellystad', signup_date=datetime.datetime(2024, 3, 7, 0, 0)), 
                                 Row(user_id='U000005', name='Janet Williams', email='unknown', gender='Female', city='South Joshuastad', signup_date=None)]}
 
-    assert final_rows_dicts == expected_rows
+    assert final_rows_dicts.keys() == expected_rows.keys()
+    for name in expected_rows:
+        assertDataFrameEqual(final_rows_dicts[name], expected_rows[name], checkRowOrder=False, rtol=0, atol=0)

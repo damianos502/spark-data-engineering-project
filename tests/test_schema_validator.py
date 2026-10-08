@@ -2,10 +2,10 @@ import logging
 import pytest
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, TimestampType
 
-from src.utils.spark_session import create_spark_session
 from src.validators.schema_validator import columns_validation, check_dataframes_schema
 
-def test_invalid_columns_names():
+
+def test_invalid_columns_names(spark_session):
     # arrange
     test_targed_columns = {
         "orders": ["order_id", "user_id", "order_date"],
@@ -21,7 +21,7 @@ def test_invalid_columns_names():
         "users": ["invalid_user_id", "invalid_name", "invalid_email", "invalid_gender"]
     }
 
-    spark = create_spark_session("test_session")
+    spark = spark_session
     logger = logging.getLogger("test_logger")
     test_existing_dataframes = {}
 
@@ -46,7 +46,8 @@ def test_invalid_columns_names():
             skip_invalid_tables = False
         )
 
-def test_valid_column_names():
+
+def test_valid_column_names(spark_session):
     test_expected_columns = {
         "orders": ["order_id", "user_id", "order_date"],
         "events": ["event_id", "user_id", "product_id"],
@@ -54,7 +55,7 @@ def test_valid_column_names():
         "users": ["user_id", "name", "email", "gender"]
     }
 
-    spark = create_spark_session("test_session")
+    spark = spark_session
     logger = logging.getLogger("test_logger")
     test_existing_dataframes = {}
 
@@ -84,7 +85,8 @@ def test_valid_column_names():
     for table_name in test_existing_dataframes:
         assert result[table_name].columns == test_existing_dataframes[table_name].columns
 
-def test_additional_column():
+
+def test_additional_column(spark_session):
     test_targed_columns = {
         "orders": ["order_id", "user_id", "order_date"],
         "events": ["event_id", "user_id", "product_id"],
@@ -99,7 +101,7 @@ def test_additional_column():
         "users": ["user_id", "name", "email", "gender", "additional"]
     }
 
-    spark = create_spark_session("test_session")
+    spark = spark_session
     logger = logging.getLogger("test_logger")
 
     test_existing_dataframes_dict = {}
@@ -143,8 +145,9 @@ def test_additional_column():
     for table_name in test_targed_dataframes_dict:
         assert validation_result[table_name].columns == test_targed_dataframes_dict[table_name].columns
 
-def test_checking_valid_dataframes_schema():
-    spark = create_spark_session("test_session")
+
+def test_checking_valid_dataframes_schema(spark_session):
+    spark = spark_session
     logger = logging.getLogger("test_logger")
     dataframes_dict = {}
 
@@ -185,10 +188,11 @@ def test_checking_valid_dataframes_schema():
     result = check_dataframes_schema(silver_dataframes = dataframes_dict, 
                                      expected_schema = expected_schema, 
                                      logger = logger)
-    assert result == True
+    assert result is True
 
-def test_checking_invalid_dataframes_schema():
-    spark = create_spark_session("test_session")
+
+def test_checking_invalid_dataframes_schema(spark_session):
+    spark = spark_session
     logger = logging.getLogger("test_logger")
     dataframes_dict = {}
 
@@ -245,10 +249,11 @@ def test_checking_invalid_dataframes_schema():
     result = check_dataframes_schema(silver_dataframes = dataframes_dict, 
                                      expected_schema = expected_schema, 
                                      logger = logger)
-    assert result == False
+    assert result is False
 
-def test_missing_column_in_schema():
-    spark = create_spark_session("test_session")
+
+def test_missing_column_in_schema(spark_session):
+    spark = spark_session
     logger = logging.getLogger("test_logger")
     dataframes_dict = {}
 
@@ -301,4 +306,4 @@ def test_missing_column_in_schema():
     result = check_dataframes_schema(silver_dataframes = dataframes_dict, 
                                      expected_schema = expected_schema, 
                                      logger = logger)
-    assert result == False
+    assert result is False

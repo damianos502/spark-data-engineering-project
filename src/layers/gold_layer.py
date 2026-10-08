@@ -2,7 +2,7 @@ from pyspark.sql import SparkSession
 
 import src.utils.logger as L
 from typing import Optional
-import time
+import time, datetime
 
 from src.layers.base_layer import BasicLayer
 import src.validators.schema_validator as schema_validator
@@ -67,20 +67,15 @@ class GoldLayer(BasicLayer):
                                  transformation_name = "sales_and_revenues")
  
         sum_per_user = gold_transformations.aggregate_revenue_per_user(orders_dataframe = orders_dataframe)
-        sum_per_user.persist()
 
-        try: 
-            gold_geography, share_top_users_in_total_revenue = gold_transformations.geography(sum_per_user_dataframe = sum_per_user, 
+        gold_geography, share_top_users_in_total_revenue = gold_transformations.geography(sum_per_user_dataframe = sum_per_user, 
                                                                                             users_dataframe = users_dataframe, 
                                                                                             total_system_revenue = total_system_revenue,
                                                                                             logger = self.logger)
-            io_writers.write_parquet(data = gold_geography,
+        io_writers.write_parquet(data = gold_geography,
                                     logger = self.logger,
                                     layer_name = "gold",
                                     transformation_name = "geography")
-
-        finally:
-            sum_per_user.unpersist()
 
 
         gold_customer_metrics, active_users_count, avg_orders_count_per_user = gold_transformations.customer_metrics(orders_dataframe = orders_dataframe)
@@ -96,6 +91,10 @@ class GoldLayer(BasicLayer):
                                  logger = self.logger,
                                  layer_name = "gold",
                                  transformation_name = "products")
+
+        io_writers.write_parquet_report(data = top_products_per_city,
+                                        logger = self.logger,
+                                        report_name = "top_products_per_city")
 
 
         gold_orders, big_orders_share = gold_transformations.orders(orders_dataframe = orders_dataframe, 
@@ -113,6 +112,18 @@ class GoldLayer(BasicLayer):
                                  layer_name = "gold",
                                  transformation_name = "customers_loyalty")
 
+        current_timestamp = datetime.datetime.now()
+        current_timestamp_string = str(current_timestamp)
+        additional_report = {"timestamp": current_timestamp_string,
+                             "share_top_users_in_total_revenue": share_top_users_in_total_revenue,
+                             "active_users_count": active_users_count,
+                             "avg_orders_count_per_user": avg_orders_count_per_user,
+                             "big_orders_share": big_orders_share
+                             }
+
+        io_writers.write_json_report(new_data = additional_report, 
+                                     file_name = "report", 
+                                     logger = self.logger)
 
         gold_end_time = time.time()
         gold_execution_time = round(gold_end_time - gold_start_time, 2)

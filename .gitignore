@@ -44,6 +44,9 @@ data/silver/*
 data/gold/*
 !data/gold/.gitkeep
 
+data/additional_reports/*
+!data/additional_reports/.gitkeep
+
 # =============================
 # Spark generated files
 # =============================

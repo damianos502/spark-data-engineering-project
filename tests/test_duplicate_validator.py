@@ -1,8 +1,10 @@
-import logging, pytest, datetime
+import datetime
+import logging
+
+import pytest
 import pyspark.sql.functions as SF
 from src.validators.duplicate_validator import duplicates_handling
 from pyspark.sql.types import StringType, DoubleType, StructType, StructField, Row
-from src.utils.spark_session import create_spark_session
 from pyspark.testing.utils import assertDataFrameEqual
 
 
@@ -21,8 +23,8 @@ duplicates_schema = {
 }
 
 @pytest.fixture
-def sample_dataframes_without_duplicates_generator():
-    spark = create_spark_session("test_null_validator")
+def sample_dataframes_without_duplicates_generator(spark_session):
+    spark = spark_session
     dataframes_dict = {}
     sample_data = {
         "events": [("E00000001", "U009798", "P001393", "cart", "2025-07-08T14:28:55.893919", "2025-07-07T14:28:55.893919"),
@@ -86,8 +88,8 @@ def sample_dataframes_without_duplicates_generator():
     return dataframes_dict
 
 @pytest.fixture
-def sample_dataframes_with_duplicates_generator():
-    spark = create_spark_session("test_null_validator")
+def sample_dataframes_with_duplicates_generator(spark_session):
+    spark = spark_session
     dataframes_dict = {}
     sample_data = {
         "events": [("E00000001", "U009798", "P001393", None, None, "2025-07-07T14:28:55.893919"),
@@ -150,7 +152,8 @@ def sample_dataframes_with_duplicates_generator():
 
     return dataframes_dict
 
-def test_ivalid_duplicate_handling_schema():
+
+def test_invalid_duplicate_handling_schema():
     logger = logging.getLogger("Test_logger")
     input_dataframes = {}
     result1, result2 = duplicates_handling(logger = logger,
@@ -161,6 +164,7 @@ def test_ivalid_duplicate_handling_schema():
     assert not result1
     assert not result2 
 
+
 def test_dataframe_without_duplicates(sample_dataframes_without_duplicates_generator):
     logger = logging.getLogger("Test_logger")
 
@@ -169,12 +173,8 @@ def test_dataframe_without_duplicates(sample_dataframes_without_duplicates_gener
                                                                  duplicate_schema = duplicates_schema,
                                                                  duplicate_schema_path = "test_path")
     
-    no_duplicates = True
-
     for dataframe in rejected_rows.values():
-        if not dataframe.isEmpty():
-            no_duplicates = False
-            break
+        assert dataframe.isEmpty()
 
     assert (
         sample_dataframes_without_duplicates_generator.keys()
@@ -184,7 +184,7 @@ def test_dataframe_without_duplicates(sample_dataframes_without_duplicates_gener
     for name, expected_df in sample_dataframes_without_duplicates_generator.items():
         assertDataFrameEqual(expected_df, deduplicates_dataframes[name])
         
-    assert no_duplicates == True
+
 
 def test_dataframe_with_duplicates(sample_dataframes_with_duplicates_generator):
     logger = logging.getLogger("Test_logger")
@@ -198,10 +198,10 @@ def test_dataframe_with_duplicates(sample_dataframes_with_duplicates_generator):
                                                                  duplicate_schema_path = "test_path")
     
     for table_name, dataframe in deduplicates_dataframes.items():
-        deduplicates_dataframes_dict[table_name] = dataframe.collect()[0:6]
+        deduplicates_dataframes_dict[table_name] = dataframe.collect()
 
     for table_name, dataframe in rejected_rows.items():
-        rejected_rows_dict[table_name] = dataframe.collect()[0:6]
+        rejected_rows_dict[table_name] = dataframe.collect()
 
 
     expected_deduplicates_rows_dict = {'events': [Row(event_id='E00000001', user_id='U009798', product_id='P001393', event_type=None, event_timestamp=None, ingestion_time='2025-07-07T14:28:55.893919'), 
@@ -222,6 +222,33 @@ def test_dataframe_with_duplicates(sample_dataframes_with_duplicates_generator):
                                              Row(user_id='U000001', name='Adam Shaffer', email=None, gender='Male', city='Curtisfurt', signup_date=None, ingestion_time=None)]}
 
 
-    assert deduplicates_dataframes_dict == expected_deduplicates_rows_dict
-    assert rejected_rows_dict == expected_rejected_rows_dict
+    assert deduplicates_dataframes_dict.keys() == expected_deduplicates_rows_dict.keys()
+    for name in expected_deduplicates_rows_dict:
+        assertDataFrameEqual(deduplicates_dataframes_dict[name], expected_deduplicates_rows_dict[name], checkRowOrder=False, rtol=0, atol=0)
+    assert rejected_rows_dict.keys() == expected_rejected_rows_dict.keys()
+    for name in expected_rejected_rows_dict:
+        assertDataFrameEqual(rejected_rows_dict[name], expected_rejected_rows_dict[name], checkRowOrder=False, rtol=0, atol=0)
 
+
+
+
+def test_deduplication_preserves_input_dictionary(sample_dataframes_with_duplicates_generator):
+    inputs = sample_dataframes_with_duplicates_generator
+    original_references = inputs.copy()
+    result, _ = duplicates_handling(logging.getLogger("test"), inputs, duplicates_schema, "test")
+    assert result is not inputs
+    assert inputs.keys() == original_references.keys()
+    for name, original in original_references.items():
+        assert inputs[name] is original
+        assert result[name] is not original
+
+
+
+def test_deduplication_resolves_ties(spark_session):
+    data = spark_session.createDataFrame(
+        [("O1", 150.0, "2025-01-01"), ("O1", 100.0, "2025-01-01")],
+        "order_id string, total_amount double, ingestion_time string",
+    ).repartition(2)
+    kept, rejected = duplicates_handling(logging.getLogger("test"), {"orders": data}, {"orders": ["order_id"]}, "test")
+    assert kept["orders"].collect() == [Row(order_id="O1", total_amount=100.0, ingestion_time="2025-01-01")]
+    assert rejected["orders"].collect() == [Row(order_id="O1", total_amount=150.0, ingestion_time="2025-01-01")]
